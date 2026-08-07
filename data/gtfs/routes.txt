@@ -1,0 +1,4 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+L12ar,sotral_togo,L12,Entreprise de l'union-BIA,3,,
+L06ar,sotral_togo,l6,Agoè Assiyéyé-BIA,3,,
+L04ar,sotral_togo,L4,Sagboville-REX,3,,

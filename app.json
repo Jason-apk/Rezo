@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "rezo",
-    "slug": "rezo",
+    "slug": "rezomobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -38,11 +38,19 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "85768529-d0db-4a1d-872b-194617216376"
+      }
+    },
+    "owner": "hopetg"
   }
 }

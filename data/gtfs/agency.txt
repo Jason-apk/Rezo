@@ -1,0 +1,2 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone
+sotral_togo,SOTRAL,https://sotraltogo.com/index,GMT+0),fr,0022822203938

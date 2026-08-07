@@ -1,0 +1,7 @@
+route_id,service_id,trip_id,trip_headsign,direction_id,shape_id
+L12ar,sotral_togo,L12_ALLER,BIA,0,RL12al
+L12ar,sotral_togo,L12_RETOUR,Entreprise de l'union,1,RL12re
+L06ar,sotral_togo,L06_ALLER,BIA,0,RL06al
+L06ar,sotral_togo,L06_RETOUR,Agoè Assiyéyé,1,RL06re
+L04ar,sotral_togo,L04_ALLER,REX,0,RL04al
+L04ar,sotral_togo,L04_RETOUR,Sagboville,1,RL04re
