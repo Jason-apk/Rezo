@@ -1,2 +1,2 @@
 service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
-sotral_togo,1,1,1,1,1,1,0,20160101,22500501
+WEEKDAY,1,1,1,1,1,1,0,20160101,22500501
