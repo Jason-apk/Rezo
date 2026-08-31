@@ -1,4 +1,6 @@
-export const L12_stops_aller = [
+import { L12Stop } from "@/types";
+
+export const L12_stops_aller: L12Stop = [
   {
     id: "S0354",
     nom: "Entreprise de l'Union",
@@ -223,7 +225,7 @@ export const L12_stops_aller = [
   { id: "S0319", nom: "BIA", lat: 6.124111, lon: 1.22477, ordre: 36 },
 ];
 
-export const L12_stops_retour = [
+export const L12_stops_retour: L12Stop = [
   { id: "S0319", nom: "BIA", lat: 6.124111, lon: 1.22477, ordre: 1 },
   {
     id: "S0298",
