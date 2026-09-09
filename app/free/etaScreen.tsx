@@ -72,9 +72,12 @@ export default function EtaScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push("/free/mapScreen")}
+            //onPress={() => router.push("/free/mapScreen")}
           >
-            <Text style={styles.secondaryButtonText}>Voir sur la carte</Text>
+            <Text style={styles.secondaryButtonText}>
+              {" "}
+              la carte bientot disponinible
+            </Text>
           </TouchableOpacity>
         </View>
 
