@@ -2,7 +2,10 @@
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import {
+  Alert,
+  BackHandler,
   Image,
   Linking,
   StyleSheet,
@@ -26,6 +29,28 @@ function openEmail() {
 }
 
 export default function ThanksScreen() {
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        "Quitter l'application ?",
+        "Vous devez vous abonner pour continuer à suivre votre bus.",
+        [
+          { text: "Annuler", style: "cancel" },
+          {
+            text: "Quitter",
+            style: "destructive",
+            onPress: () => BackHandler.exitApp(),
+          },
+        ],
+      );
+      return true; // on gère l'événement nous-mêmes
+    };
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction,
+    );
+    return () => subscription.remove();
+  }, []);
   return (
     <SafeAreaView style={styles.main}>
       <View style={styles.container}>

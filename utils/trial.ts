@@ -1,5 +1,5 @@
 // utils/trial.ts
-const TRIAL_DAYS = 0;
+const TRIAL_DAYS = 30;
 
 export function isTrialExpired(firstLaunchAt: string | null): boolean {
   if (!firstLaunchAt) return false; // pas encore de date = premier lancement, essai non expiré

@@ -18,9 +18,15 @@ export default function SplashScreen() {
 
     const timer = setTimeout(() => {
       const { firstLaunchAt, hasSubscribed } = useRiderStore.getState();
+
+      if (hasSubscribed) {
+        router.replace("/subcription/thanks");
+        return;
+      }
+
       const expired = isTrialExpired(firstLaunchAt);
-      if (expired && !hasSubscribed) {
-        router.replace("/subcription"); // aussi: typo "subcription" → "subscription"
+      if (expired) {
+        router.replace("/subcription");
       } else {
         router.replace("/free");
       }
