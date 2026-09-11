@@ -8,6 +8,7 @@ import { useRiderStore } from "@/store/useRiderStore";
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
 import { rankBuses } from "@/utils/busRanking";
 import { getScreenVariant } from "@/utils/etaScreenState";
+import { Ionicons } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -35,13 +36,23 @@ export default function EtaScreen() {
   const userStop = stops.find((s) => s.id === selectedStopId);
 
   if (!userStop) {
-    return null; // ne devrait pas arriver si Screen 2 impose un choix avant navigation
+    return null;
   }
 
-  const rankedBuses = rankBuses(buses, userStop);
-  const variant = getScreenVariant(rankedBuses, isOffline);
-  //const variant = "arrived"; // DEBUG temporaire — force l'état arrivé
-  const topBus = rankedBuses[0];
+  // Nécessaire pour que rankBuses sache où se situe chaque bus sur SA direction,
+  // et détecte s'il a déjà dépassé l'arrêt choisi par l'usager.
+  const routeStopsByDirection = {
+    aller: L12_stops_aller,
+    retour: L12_stops_retour,
+  };
+
+  const rankedBuses = rankBuses(buses, userStop, routeStopsByDirection);
+  // Seul un bus disponible (ni bloqué, ni dépassé, ni signal perdu) peut être
+  // affiché comme "le" bus suivi en haut de l'écran — évite l'incohérence
+  // avec son propre statut affiché plus bas dans la liste.
+  const availableBuses = rankedBuses.filter((b) => !b.isBlocked);
+  const topBus = availableBuses[0];
+  const variant = getScreenVariant(rankedBuses, isOffline, topBus);
 
   const { showFeedback, respond } = usePostTripFeedback(
     variant === "arrived",
@@ -70,13 +81,9 @@ export default function EtaScreen() {
           >
             <Text style={styles.secondaryButtonText}>Changer d'arrêt</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            //onPress={() => router.push("/free/mapScreen")}
-          >
+          <TouchableOpacity style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
-              {" "}
-              la carte bientot disponinible
+              la carte bientôt disponible
             </Text>
           </TouchableOpacity>
         </View>
@@ -89,19 +96,27 @@ export default function EtaScreen() {
   );
 }
 
-// --- Zone alerte : variante normale seulement pour l'instant, les autres viendront à l'étape 8b ---
+// --- Zone alerte ---
 function AlertZone({ variant }: { variant: string }) {
   if (variant === "normal") {
-    return <Text style={styles.normalText}>Le bus arrive bientôt</Text>;
+    return (
+      <View style={styles.normalRow}>
+        <Ionicons name="bus" size={20} color={colors.statusGreen} />
+        <Text style={styles.normalText}>Le bus arrive bientôt</Text>
+      </View>
+    );
   }
 
   if (variant === "embouteillage") {
     return (
       <View style={[styles.alertCard, styles.alertAmber]}>
-        <Text style={styles.alertLabel}>Info</Text>
-        <Text style={styles.alertMessage}>
-          Léger retard possible, le bus est en route
-        </Text>
+        <Ionicons name="warning" size={20} color={colors.statusAmber} />
+        <View style={styles.alertTextBlock}>
+          <Text style={styles.alertLabel}>Info</Text>
+          <Text style={styles.alertMessage}>
+            Léger retard possible, le bus est en route
+          </Text>
+        </View>
       </View>
     );
   }
@@ -110,10 +125,13 @@ function AlertZone({ variant }: { variant: string }) {
     return (
       <>
         <View style={[styles.alertCard, styles.alertRose]}>
-          <Text style={styles.alertLabel}>Alerte</Text>
-          <Text style={styles.alertMessage}>
-            Ce bus rencontre un souci, nous suivons le suivant pour vous
-          </Text>
+          <Ionicons name="alert-circle" size={20} color={colors.statusRose} />
+          <View style={styles.alertTextBlock}>
+            <Text style={styles.alertLabel}>Alerte</Text>
+            <Text style={styles.alertMessage}>
+              Ce bus rencontre un souci, nous suivons le suivant pour vous
+            </Text>
+          </View>
         </View>
         <Text style={styles.toast}>
           Bus suivant sélectionné automatiquement
@@ -126,10 +144,13 @@ function AlertZone({ variant }: { variant: string }) {
     return (
       <>
         <View style={[styles.alertCard, styles.alertRose]}>
-          <Text style={styles.alertLabel}>Alerte</Text>
-          <Text style={styles.alertMessage}>
-            Ce bus est complet, nous suivons le suivant pour vous
-          </Text>
+          <Ionicons name="people" size={20} color={colors.statusRose} />
+          <View style={styles.alertTextBlock}>
+            <Text style={styles.alertLabel}>Alerte</Text>
+            <Text style={styles.alertMessage}>
+              Ce bus est complet, nous suivons le suivant pour vous
+            </Text>
+          </View>
         </View>
         <Text style={styles.toast}>
           Bus suivant sélectionné automatiquement
@@ -141,23 +162,21 @@ function AlertZone({ variant }: { variant: string }) {
   if (variant === "pause") {
     return (
       <View style={[styles.alertCard, styles.alertAmber]}>
-        <Text style={styles.alertLabel}>Alerte</Text>
-        <Text style={styles.alertMessage}>Service en pause sur ce sens</Text>
+        <Ionicons name="pause-circle" size={20} color={colors.statusAmber} />
+        <View style={styles.alertTextBlock}>
+          <Text style={styles.alertLabel}>Alerte</Text>
+          <Text style={styles.alertMessage}>Service en pause sur ce sens</Text>
+        </View>
       </View>
     );
   }
 
-  return null; // no_tracking, offline, arrived n'ont pas d'alerte — gérées dans EtaZone
+  return null;
 }
 
-// --- Zone ETA : variante normale seulement pour l'instant ---
+// --- Zone ETA ---
 function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
-  if (
-    variant === "normal" ||
-    variant === "embouteillage" ||
-    variant === "panne" ||
-    variant === "plein"
-  ) {
+  if (variant === "normal" || variant === "embouteillage") {
     if (!topBus) return null;
     const arrivalTime = new Date(Date.now() + topBus.etaMinutes * 60000);
     const timeLabel = arrivalTime.toLocaleTimeString("fr-FR", {
@@ -173,9 +192,23 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
     );
   }
 
+  if (variant === "panne" || variant === "plein") {
+    return (
+      <View style={styles.etaZone}>
+        <Ionicons name="time-outline" size={32} color={colors.statusGray} />
+        <Text style={styles.etaMessage}>En attente d'un bus disponible</Text>
+      </View>
+    );
+  }
+
   if (variant === "pause") {
     return (
       <View style={styles.etaZone}>
+        <Ionicons
+          name="pause-circle-outline"
+          size={32}
+          color={colors.statusGray}
+        />
         <Text style={styles.etaMessage}>Service en pause</Text>
       </View>
     );
@@ -184,6 +217,7 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
   if (variant === "no_tracking") {
     return (
       <View style={styles.etaZone}>
+        <Ionicons name="search" size={32} color={colors.statusGray} />
         <Text style={styles.etaMessage}>
           Aucun suivi disponible pour le moment
         </Text>
@@ -194,6 +228,7 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
   if (variant === "offline") {
     return (
       <View style={styles.etaZone}>
+        <Ionicons name="cloud-offline" size={32} color={colors.statusGray} />
         <Text style={styles.etaMessage}>Pas de connexion internet</Text>
         <Text style={styles.arrivalTime}>Reconnexion automatique en cours</Text>
       </View>
@@ -203,6 +238,11 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
   if (variant === "arrived") {
     return (
       <View style={styles.etaZone}>
+        <Ionicons
+          name="checkmark-circle"
+          size={32}
+          color={colors.statusGreen}
+        />
         <Text style={styles.etaMessage}>Le bus est arrivé à votre arrêt</Text>
       </View>
     );
@@ -214,27 +254,77 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
 function RankingList({ rankedBuses }: { rankedBuses: any[] }) {
   return (
     <View style={styles.rankingList}>
-      {rankedBuses.map((bus, index) => (
-        <View key={bus.bus_id} style={styles.rankingRow}>
-          <Text style={styles.rankingText}>
-            {index + 1} - {bus.bus_id}
-          </Text>
-          <Text style={styles.rankingText}>
-            {bus.isBlocked
-              ? getStatusText(bus.status)
-              : `${bus.etaMinutes} min`}
-          </Text>
-        </View>
-      ))}
+      {rankedBuses.map((bus, index) => {
+        const { icon, iconColor, label } = getStatusDisplay(bus);
+        return (
+          <View key={bus.bus_id} style={styles.rankingRow}>
+            <Text style={styles.rankingText}>
+              {index + 1} - {bus.bus_id}
+            </Text>
+            <View style={styles.rankingStatus}>
+              {icon && <Ionicons name={icon} size={16} color={iconColor} />}
+              <Text style={[styles.rankingText, { color: iconColor }]}>
+                {label}
+              </Text>
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function getStatusText(status: string): string {
-  if (status === "pause") return "en pause";
-  if (status === "panne") return "en panne";
-  if (status === "plein") return "plein";
-  return "";
+// Centralise l'affichage (icône + couleur + texte) pour chaque état d'un bus dans la liste.
+// hasPassedStop est vérifié en premier : un bus qui a dépassé l'arrêt n'est pas "en panne",
+// il faut que l'usager comprenne que c'est normal, pas un problème.
+function getStatusDisplay(bus: any): {
+  icon: keyof typeof Ionicons.glyphMap | null;
+  iconColor: string;
+  label: string;
+} {
+  if (bus.isStale) {
+    return {
+      icon: "cloud-offline-outline",
+      iconColor: colors.statusGray,
+      label: "Signal perdu",
+    };
+  }
+  if (bus.hasPassedStop) {
+    return {
+      icon: "refresh-circle",
+      iconColor: colors.statusGray,
+      label: "Vient de passer",
+    };
+  }
+  if (bus.status === "panne") {
+    return {
+      icon: "alert-circle",
+      iconColor: colors.statusRose,
+      label: "En panne",
+    };
+  }
+  if (bus.status === "plein") {
+    return {
+      icon: "people",
+      iconColor: colors.statusRose,
+      label: "Plein",
+    };
+  }
+  if (bus.status === "pause") {
+    return {
+      icon: "pause-circle",
+      iconColor: colors.statusAmber,
+      label: "En pause",
+    };
+  }
+  if (bus.isBlocked) {
+    return { icon: null, iconColor: colors.statusGray, label: "" };
+  }
+  return {
+    icon: "navigate",
+    iconColor: colors.statusGreen,
+    label: `${bus.etaMinutes} min`,
+  };
 }
 
 const styles = StyleSheet.create({
@@ -325,5 +415,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.textPrimary,
     textAlign: "center",
+  },
+  normalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  alertTextBlock: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  rankingStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 });
