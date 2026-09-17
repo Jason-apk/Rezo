@@ -1,4 +1,4 @@
-// src/hooks/useNearestStop.ts
+// hooks/useNearestStop.ts
 import { L12_stops_aller, L12_stops_retour } from "@/data/stops";
 import { Direction, useRiderStore } from "@/store/useRiderStore";
 import { L12StopPoint } from "@/types";
@@ -30,19 +30,32 @@ export function useNearestStopDetection(direction: Direction) {
   const setSelectedStopId = useRiderStore((s) => s.setSelectedStopId);
 
   useEffect(() => {
-    if (selectedStopId) return; // déjà un arrêt choisi, pas besoin de détecter
+    if (selectedStopId) return;
+
+    let cancelled = false;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted" || cancelled) return;
 
-      const position = await Location.getCurrentPositionAsync({});
-      const nearest = findNearestStop(
-        position.coords.latitude,
-        position.coords.longitude,
-        direction,
-      );
-      setSelectedStopId(nearest.id);
+        const position = await Location.getCurrentPositionAsync({});
+        if (cancelled) return;
+
+        const nearest = findNearestStop(
+          position.coords.latitude,
+          position.coords.longitude,
+          direction,
+        );
+        setSelectedStopId(nearest.id);
+      } catch (e) {
+        // Détection silencieuse : pas grave si elle échoue, l'usager
+        // peut toujours choisir son arrêt manuellement dans la liste.
+      }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [direction, selectedStopId]);
 }

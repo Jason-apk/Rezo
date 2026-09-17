@@ -19,7 +19,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.hopetg.rezomobile"
+      "package": "com.hopetg.rezomobile",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -59,6 +65,12 @@
         "projectId": "85768529-d0db-4a1d-872b-194617216376"
       }
     },
-    "owner": "hopetg"
+    "owner": "hopetg",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/85768529-d0db-4a1d-872b-194617216376"
+    }
   }
 }

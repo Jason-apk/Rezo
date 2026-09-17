@@ -35,31 +35,52 @@ export default function EtaScreen() {
   const stops = direction === "aller" ? L12_stops_aller : L12_stops_retour;
   const userStop = stops.find((s) => s.id === selectedStopId);
 
-  if (!userStop) {
-    return null;
-  }
-
-  // Nécessaire pour que rankBuses sache où se situe chaque bus sur SA direction,
-  // et détecte s'il a déjà dépassé l'arrêt choisi par l'usager.
   const routeStopsByDirection = {
     aller: L12_stops_aller,
     retour: L12_stops_retour,
   };
 
-  const rankedBuses = rankBuses(buses, userStop, routeStopsByDirection);
-  // Seul un bus disponible (ni bloqué, ni dépassé, ni signal perdu) peut être
-  // affiché comme "le" bus suivi en haut de l'écran — évite l'incohérence
-  // avec son propre statut affiché plus bas dans la liste.
+  // Calculé même si userStop est undefined — rankBuses reçoit un stop neutre
+  // ou un tableau vide, jamais de branche conditionnelle qui saute un hook.
+  const rankedBuses = userStop
+    ? rankBuses(buses, userStop, routeStopsByDirection)
+    : [];
+
+  console.log(
+    "DEBUG rankedBuses:",
+    JSON.stringify(
+      rankedBuses.map((b) => ({
+        id: b.bus_id,
+        isBlocked: b.isBlocked,
+        isStale: b.isStale,
+        hasPassedStop: b.hasPassedStop,
+        status: b.status,
+      })),
+      null,
+      2,
+    ),
+  );
+
   const availableBuses = rankedBuses.filter((b) => !b.isBlocked);
   const topBus = availableBuses[0];
-  const variant = getScreenVariant(rankedBuses, isOffline, topBus);
 
+  const variant = userStop
+    ? getScreenVariant(rankedBuses, isOffline, topBus)
+    : "no_tracking";
+
+  // Ces deux hooks sont TOUJOURS appelés, peu importe l'état de userStop.
+  // topBus/selectedStopId peuvent être undefined en interne, c'est géré via optional chaining.
   const { showFeedback, respond } = usePostTripFeedback(
     variant === "arrived",
     topBus?.bus_id,
   );
 
   useEtaLogger(topBus, selectedStopId);
+
+  // Seul le JSX est conditionnel — plus aucun hook après ce point.
+  if (!userStop) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,6 +90,7 @@ export default function EtaScreen() {
             {direction === "aller" ? "→ BIA" : "→ Entreprise de l'Union"}
             {topBus ? `  ·  Bus ${topBus.bus_id}` : ""}
           </Text>
+          <Text style={styles.stopLabel}>Arrêt : {userStop.nom}</Text>
         </View>
 
         <AlertZone variant={variant} />
@@ -79,13 +101,18 @@ export default function EtaScreen() {
             style={styles.secondaryButton}
             onPress={() => router.push("/free")}
           >
-            <Text style={styles.secondaryButtonText}>Changer d'arrêt</Text>
+            <Text style={styles.secondaryButtonText}> 🔄️ Changer d'arrêt</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>
-              la carte bientôt disponible
-            </Text>
-          </TouchableOpacity>
+          {variant == "no_tracking" && (
+            <TouchableOpacity
+              //onPress={() => router.push("/free/mapScreen")}
+              style={styles.secondaryButton}
+            >
+              <Text style={styles.secondaryButtonText}>
+                carte bientôt disponible
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <RankingList rankedBuses={rankedBuses} />
@@ -429,5 +456,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  stopLabel: {
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: "center",
   },
 });
