@@ -6,6 +6,7 @@ import { useEtaLogger } from "@/hooks/useEtaLogger";
 import { usePostTripFeedback } from "@/hooks/usePostTripFeedback";
 import { useRiderStore } from "@/store/useRiderStore";
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
+import { AlertConfig } from "@/types";
 import { rankBuses } from "@/utils/busRanking";
 import { getScreenVariant } from "@/utils/etaScreenState";
 import { Ionicons } from "@expo/vector-icons";
@@ -124,42 +125,66 @@ export default function EtaScreen() {
 }
 
 // --- Zone alerte ---
+function AlertCard({ config }: { config: AlertConfig }) {
+  return (
+    <View style={[styles.alertCard, { borderLeftColor: config.accentColor }]}>
+      <View
+        style={[
+          styles.alertIconBadge,
+          { backgroundColor: `${config.accentColor}22` },
+        ]}
+      >
+        <Ionicons name={config.icon} size={20} color={config.accentColor} />
+      </View>
+      <View style={styles.alertTextBlock}>
+        <Text style={[styles.alertLabel, { color: config.accentColor }]}>
+          {config.label}
+        </Text>
+        <Text style={styles.alertMessage}>{config.message}</Text>
+      </View>
+    </View>
+  );
+}
+
 function AlertZone({ variant }: { variant: string }) {
   if (variant === "normal") {
     return (
-      <View style={styles.normalRow}>
-        <Ionicons name="bus" size={20} color={colors.statusGreen} />
-        <Text style={styles.normalText}>Le bus arrive bientôt</Text>
-      </View>
+      <AlertCard
+        config={{
+          icon: "bus",
+          accentColor: colors.statusGreen,
+          label: "Info",
+          message: "Le bus est en route",
+        }}
+      />
     );
   }
 
   if (variant === "embouteillage") {
     return (
-      <View style={[styles.alertCard, styles.alertAmber]}>
-        <Ionicons name="warning" size={20} color={colors.statusAmber} />
-        <View style={styles.alertTextBlock}>
-          <Text style={styles.alertLabel}>Info</Text>
-          <Text style={styles.alertMessage}>
-            Léger retard possible, le bus est en route
-          </Text>
-        </View>
-      </View>
+      <AlertCard
+        config={{
+          icon: "warning",
+          accentColor: colors.statusAmber,
+          label: "Info",
+          message: "Léger retard possible, le bus est en route",
+        }}
+      />
     );
   }
 
   if (variant === "panne") {
     return (
       <>
-        <View style={[styles.alertCard, styles.alertRose]}>
-          <Ionicons name="alert-circle" size={20} color={colors.statusRose} />
-          <View style={styles.alertTextBlock}>
-            <Text style={styles.alertLabel}>Alerte</Text>
-            <Text style={styles.alertMessage}>
-              Ce bus rencontre un souci, nous suivons le suivant pour vous
-            </Text>
-          </View>
-        </View>
+        <AlertCard
+          config={{
+            icon: "alert-circle",
+            accentColor: colors.statusRose,
+            label: "Alerte",
+            message:
+              "Ce bus rencontre un souci, nous suivons le suivant pour vous",
+          }}
+        />
         <Text style={styles.toast}>
           Bus suivant sélectionné automatiquement
         </Text>
@@ -170,15 +195,14 @@ function AlertZone({ variant }: { variant: string }) {
   if (variant === "plein") {
     return (
       <>
-        <View style={[styles.alertCard, styles.alertRose]}>
-          <Ionicons name="people" size={20} color={colors.statusRose} />
-          <View style={styles.alertTextBlock}>
-            <Text style={styles.alertLabel}>Alerte</Text>
-            <Text style={styles.alertMessage}>
-              Ce bus est complet, nous suivons le suivant pour vous
-            </Text>
-          </View>
-        </View>
+        <AlertCard
+          config={{
+            icon: "people",
+            accentColor: colors.statusRose,
+            label: "Alerte",
+            message: "Ce bus est complet, nous suivons le suivant pour vous",
+          }}
+        />
         <Text style={styles.toast}>
           Bus suivant sélectionné automatiquement
         </Text>
@@ -188,19 +212,19 @@ function AlertZone({ variant }: { variant: string }) {
 
   if (variant === "pause") {
     return (
-      <View style={[styles.alertCard, styles.alertAmber]}>
-        <Ionicons name="pause-circle" size={20} color={colors.statusAmber} />
-        <View style={styles.alertTextBlock}>
-          <Text style={styles.alertLabel}>Alerte</Text>
-          <Text style={styles.alertMessage}>Service en pause sur ce sens</Text>
-        </View>
-      </View>
+      <AlertCard
+        config={{
+          icon: "pause-circle",
+          accentColor: colors.statusAmber,
+          label: "Alerte",
+          message: "Service en pause sur ce sens",
+        }}
+      />
     );
   }
 
   return null;
 }
-
 // --- Zone ETA ---
 function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
   if (variant === "normal" || variant === "embouteillage") {
@@ -313,7 +337,7 @@ function getStatusDisplay(bus: any): {
     return {
       icon: "cloud-offline-outline",
       iconColor: colors.statusGray,
-      label: "Signal perdu",
+      label: "Pas de signal",
     };
   }
   if (bus.hasPassedStop) {
@@ -416,21 +440,6 @@ const styles = StyleSheet.create({
   },
   rankingText: { fontSize: fontSize.base, color: colors.textPrimary },
 
-  alertCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: spacing.md,
-    borderRadius: radius.md,
-    marginBottom: spacing.md,
-  },
-  alertAmber: { backgroundColor: colors.statusAmber },
-  alertRose: { backgroundColor: colors.statusRose },
-  alertLabel: {
-    fontWeight: "600",
-    color: colors.textPrimary,
-    marginRight: spacing.sm,
-  },
-  alertMessage: { flex: 1, color: colors.textPrimary, fontSize: fontSize.base },
   toast: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
@@ -448,10 +457,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  alertTextBlock: {
-    flex: 1,
-    marginLeft: 8,
-  },
+
   rankingStatus: {
     flexDirection: "row",
     alignItems: "center",
@@ -462,5 +468,35 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs,
     textAlign: "center",
+  },
+  alertCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: colors.backgroundCard,
+    borderLeftWidth: 4,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  alertIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  alertTextBlock: {
+    flex: 1,
+  },
+  alertLabel: {
+    fontWeight: "700",
+    fontSize: fontSize.sm,
+    marginBottom: 2,
+  },
+  alertMessage: {
+    color: colors.textPrimary,
+    fontSize: fontSize.base,
+    lineHeight: 20,
   },
 });
