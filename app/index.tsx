@@ -1,6 +1,8 @@
 // app/index.tsx
+import { supabase } from "@/lib/supabase";
 import { useRiderStore } from "@/store/useRiderStore";
 import { colors } from "@/theme/tokens";
+import { getDeviceId } from "@/utils/deviceId";
 import { isTrialExpired } from "@/utils/trial";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,7 +16,21 @@ export default function SplashScreen() {
   const setFirstLaunchIfNeeded = useRiderStore((s) => s.setFirstLaunchIfNeeded);
 
   useEffect(() => {
+    const isFirstLaunch = !useRiderStore.getState().firstLaunchAt;
     useRiderStore.getState().setFirstLaunchIfNeeded();
+
+    (async () => {
+      const deviceId = await getDeviceId();
+      await supabase
+        .from("events")
+        .insert({ device_id: deviceId, action: "session_start" });
+
+      if (isFirstLaunch) {
+        await supabase
+          .from("events")
+          .insert({ device_id: deviceId, action: "trial_started" });
+      }
+    })();
 
     const timer = setTimeout(() => {
       const { firstLaunchAt, hasSubscribed } = useRiderStore.getState();

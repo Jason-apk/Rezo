@@ -1,13 +1,10 @@
 // app/eta.tsx
 import { FeedbackOverlay } from "@/components/FeedbackOverlay";
-import { L12_stops_aller, L12_stops_retour } from "@/data/stops";
-import { useBusSubscription } from "@/hooks/useBusSubscription";
 import { useEtaLogger } from "@/hooks/useEtaLogger";
 import { usePostTripFeedback } from "@/hooks/usePostTripFeedback";
-import { useRiderStore } from "@/store/useRiderStore";
+import { useRankedBusesForStop } from "@/hooks/useRankedBusesForStop";
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
 import { AlertConfig } from "@/types";
-import { rankBuses } from "@/utils/busRanking";
 import { getScreenVariant } from "@/utils/etaScreenState";
 import { Ionicons } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
@@ -18,11 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EtaScreen() {
   const router = useRouter();
-  useBusSubscription();
-
-  const direction = useRiderStore((s) => s.direction);
-  const selectedStopId = useRiderStore((s) => s.selectedStopId);
-  const buses = useRiderStore((s) => s.buses);
+  const { userStop, direction, selectedStopId, rankedBuses, topBus } =
+    useRankedBusesForStop();
 
   const [isOffline, setIsOffline] = useState(false);
 
@@ -33,44 +27,10 @@ export default function EtaScreen() {
     return () => unsubscribe();
   }, []);
 
-  const stops = direction === "aller" ? L12_stops_aller : L12_stops_retour;
-  const userStop = stops.find((s) => s.id === selectedStopId);
-
-  const routeStopsByDirection = {
-    aller: L12_stops_aller,
-    retour: L12_stops_retour,
-  };
-
-  // Calculé même si userStop est undefined — rankBuses reçoit un stop neutre
-  // ou un tableau vide, jamais de branche conditionnelle qui saute un hook.
-  const rankedBuses = userStop
-    ? rankBuses(buses, userStop, routeStopsByDirection)
-    : [];
-
-  console.log(
-    "DEBUG rankedBuses:",
-    JSON.stringify(
-      rankedBuses.map((b) => ({
-        id: b.bus_id,
-        isBlocked: b.isBlocked,
-        isStale: b.isStale,
-        hasPassedStop: b.hasPassedStop,
-        status: b.status,
-      })),
-      null,
-      2,
-    ),
-  );
-
-  const availableBuses = rankedBuses.filter((b) => !b.isBlocked);
-  const topBus = availableBuses[0];
-
   const variant = userStop
     ? getScreenVariant(rankedBuses, isOffline, topBus)
     : "no_tracking";
 
-  // Ces deux hooks sont TOUJOURS appelés, peu importe l'état de userStop.
-  // topBus/selectedStopId peuvent être undefined en interne, c'est géré via optional chaining.
   const { showFeedback, respond } = usePostTripFeedback(
     variant === "arrived",
     topBus?.bus_id,
@@ -78,11 +38,9 @@ export default function EtaScreen() {
 
   useEtaLogger(topBus, selectedStopId);
 
-  // Seul le JSX est conditionnel — plus aucun hook après ce point.
   if (!userStop) {
     return null;
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
@@ -100,20 +58,10 @@ export default function EtaScreen() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push("/free")}
+            onPress={() => router.replace("/free")}
           >
             <Text style={styles.secondaryButtonText}> 🔄️ Changer d'arrêt</Text>
           </TouchableOpacity>
-          {variant == "no_tracking" && (
-            <TouchableOpacity
-              //onPress={() => router.push("/free/mapScreen")}
-              style={styles.secondaryButton}
-            >
-              <Text style={styles.secondaryButtonText}>
-                carte bientôt disponible
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <RankingList rankedBuses={rankedBuses} />

@@ -1,4 +1,5 @@
 // src/store/useRiderStore.ts
+import { resetArrivedBuses } from "@/utils/busRanking";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -40,8 +41,16 @@ export const useRiderStore = create<RiderState>()(
       firstLaunchAt: null,
       hasSubscribed: false,
 
-      setDirection: (direction) => set({ direction }),
-      setSelectedStopId: (stopId) => set({ selectedStopId: stopId }),
+      setDirection: (direction) => {
+        resetArrivedBuses();
+
+        set({ direction });
+      },
+      setSelectedStopId: (stopId) => {
+        resetArrivedBuses();
+
+        set({ selectedStopId: stopId });
+      },
       setBuses: (buses) => set({ buses }),
       toggleFavorite: (stopId) => {
         const current = get().favoriteStopIds;

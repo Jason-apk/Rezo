@@ -51,6 +51,14 @@ export default function SubscriptionScreen() {
     );
     return () => subscription.remove();
   }, []);
+  useEffect(() => {
+    (async () => {
+      const deviceId = await getDeviceId();
+      await supabase
+        .from("events")
+        .insert({ device_id: deviceId, action: "paywall_viewed" });
+    })();
+  }, []);
 
   async function handleContinue() {
     const digits = phone.trim().replace(/\D/g, "");
@@ -275,58 +283,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     marginTop: spacing.md,
-  },
-});
-const styles1 = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.lg,
-    justifyContent: "center",
-  },
-  headline: {
-    fontSize: fontSize.lg,
-    fontWeight: "bold",
-    color: colors.textPrimary,
-    textAlign: "center",
-    marginBottom: spacing.md,
-  },
-  priceText: {
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    textAlign: "center",
-    marginBottom: spacing.xs,
-  },
-  subText: {
-    fontSize: fontSize.base,
-    color: colors.textSecondary,
-    textAlign: "center",
-    marginBottom: spacing.xl,
-  },
-  input: {
-    backgroundColor: colors.backgroundCard,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  primaryButtonDisabled: { opacity: 0.6 },
-  primaryButtonText: {
-    color: colors.primaryText,
-    fontSize: fontSize.md,
-    fontWeight: "600",
-  },
-  laterLink: {
-    textAlign: "center",
-    color: colors.textSecondary,
-    fontSize: fontSize.base,
   },
 });

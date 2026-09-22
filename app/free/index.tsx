@@ -3,6 +3,7 @@ import { L12_stops_aller, L12_stops_retour } from "@/data/stops";
 import { useNearestStopDetection } from "@/hooks/useNearestStop";
 import { Direction, useRiderStore } from "@/store/useRiderStore";
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
+import { resetArrivedBuses } from "@/utils/busRanking";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -32,10 +33,11 @@ export default function StopSelectionScreen() {
   function handleDirectionChange(newDirection: Direction) {
     setDirection(newDirection);
     setSelectedStopId(""); // reset pour forcer une nouvelle détection/sélection dans la nouvelle direction
+    resetArrivedBuses();
   }
 
   function handleFindBus() {
-    router.push("/free/etaScreen"); // adapte au nom réel de ta route Screen 3
+    router.replace("/free/etaScreen"); // adapte au nom réel de ta route Screen 3
   }
 
   return (

@@ -12,16 +12,22 @@ export type RankedBus = BusPosition & {
 };
 
 const BLOCKED_STATUSES = ["panne", "plein", "pause"];
-const AVG_SPEED_KMH = 15; // vitesse moyenne bus en ville, à ajuster selon données réelles du pilote
-const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes sans update = signal considéré perdu
-const PASSED_TOLERANCE = 1; // absorbe le bruit de l'heuristique nearest-stop
+const AVG_SPEED_KMH = 15;
+const STALE_THRESHOLD_MS = 2 * 60 * 1000;
+const PASSED_TOLERANCE = 1;
 
-// Trouve l'ordre du stop le plus proche de la position du bus,
-// dans la séquence de SA direction déclarée.
+// Un bus une fois marqué "arrivé" pour un arrêt donné reste exclu
+// même si le GPS oscille et fait redescendre son ordre sous le seuil.
+// Réinitialisé côté appelant quand l'usager change d'arrêt (voir note plus bas).
+const arrivedBusIds = new Set<string>();
+
+export function resetArrivedBuses() {
+  arrivedBusIds.clear();
+}
+
 function findClosestStopOrder(bus: BusPosition, routeStops: L12Stop): number {
   let closestOrder = routeStops[0]?.ordre ?? 0;
   let closestDistance = Infinity;
-
   for (const stop of routeStops) {
     const d = haversineDistance(bus.lat, bus.lng, stop.lat, stop.lon);
     if (d < closestDistance) {
@@ -29,7 +35,6 @@ function findClosestStopOrder(bus: BusPosition, routeStops: L12Stop): number {
       closestOrder = stop.ordre;
     }
   }
-
   return closestOrder;
 }
 
@@ -48,17 +53,19 @@ export function rankBuses(
       userStop.lon,
     );
     const etaMinutes = Math.round((distanceKm / AVG_SPEED_KMH) * 60);
-    // Comparaison uniquement pertinente si le bus roule dans la même
-    // direction que l'arrêt choisi par l'usager.
     const routeStops = routeStopsByDirection[bus.direction];
     const busOrder = routeStops ? findClosestStopOrder(bus, routeStops) : -1;
 
-    const hasPassedStop =
+    const passedNow =
       busOrder >= 0 && busOrder > userStop.ordre + PASSED_TOLERANCE;
+    if (passedNow) arrivedBusIds.add(bus.bus_id);
+    const hasPassedStop = arrivedBusIds.has(bus.bus_id);
+
     const isStale =
       now - new Date(bus.updated_at).getTime() > STALE_THRESHOLD_MS;
     const isBlocked =
       BLOCKED_STATUSES.includes(bus.status) || isStale || hasPassedStop;
+
     return {
       ...bus,
       distanceKm,
@@ -70,10 +77,8 @@ export function rankBuses(
   });
 
   return ranked.sort((a, b) => {
-    // les bus bloqués passent toujours après les bus disponibles
     if (a.isBlocked && !b.isBlocked) return 1;
     if (!a.isBlocked && b.isBlocked) return -1;
-    // à égalité de blocage, tri par distance
     return a.distanceKm - b.distanceKm;
   });
 }
