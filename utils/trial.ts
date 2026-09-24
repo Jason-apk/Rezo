@@ -1,5 +1,7 @@
+import { TRIAL_CONFIG } from "@/config/config";
+
 // utils/trial.ts
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = TRIAL_CONFIG.TRIAL_DAYS;
 
 export function isTrialExpired(firstLaunchAt: string | null): boolean {
   if (!firstLaunchAt) return false; // pas encore de date = premier lancement, essai non expiré

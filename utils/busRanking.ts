@@ -1,4 +1,5 @@
 // utils/busRanking.ts
+import { RANKING_CONFIG } from "@/config/config";
 import { BusPosition } from "@/store/useRiderStore";
 import { L12Stop, L12StopPoint } from "@/types";
 import { haversineDistance } from "@/utils/geo";
@@ -11,10 +12,10 @@ export type RankedBus = BusPosition & {
   hasPassedStop: boolean;
 };
 
-const BLOCKED_STATUSES = ["panne", "plein", "pause"];
-const AVG_SPEED_KMH = 15;
-const STALE_THRESHOLD_MS = 2 * 60 * 1000;
-const PASSED_TOLERANCE = 1;
+const BLOCKED_STATUSES = RANKING_CONFIG.BLOCKED_STATUSES;
+const AVG_SPEED_KMH = RANKING_CONFIG.AVG_SPEED_KMH;
+const STALE_THRESHOLD_MS = RANKING_CONFIG.STALE_THRESHOLD_MS;
+const PASSED_TOLERANCE = RANKING_CONFIG.PASSED_TOLERANCE;
 
 // Un bus une fois marqué "arrivé" pour un arrêt donné reste exclu
 // même si le GPS oscille et fait redescendre son ordre sous le seuil.

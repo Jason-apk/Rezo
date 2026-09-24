@@ -5,8 +5,11 @@ import { useEffect } from "react";
 
 export function useBusSubscription() {
   const setBuses = useRiderStore((s) => s.setBuses);
+  const upsertBus = useRiderStore((s) => s.upsertBus);
+  const removeBus = useRiderStore((s) => s.removeBus);
 
   useEffect(() => {
+    // Chargement initial : un seul select, au montage.
     supabase
       .from("bus_positions")
       .select("*")
@@ -14,21 +17,22 @@ export function useBusSubscription() {
         if (data) setBuses(data as BusPosition[]);
       });
 
-    // nom unique à chaque montage, évite les conflits si un ancien channel n'est pas encore nettoyé
-    const channelName = `bus_positions_realtime_${Date.now()}`;
+    //const channelName = `bus_positions_realtime_${Date.now()}`;
 
     const channel = supabase
-      .channel(channelName)
+      //.channel(channelName)
+      .channel("bus_positions_realtime")
+
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bus_positions" },
-        () => {
-          supabase
-            .from("bus_positions")
-            .select("*")
-            .then(({ data }) => {
-              if (data) setBuses(data as BusPosition[]);
-            });
+        (payload) => {
+          // Le payload contient déjà la ligne modifiée — plus besoin de refetch.
+          if (payload.eventType === "DELETE") {
+            removeBus((payload.old as BusPosition).bus_id);
+          } else {
+            upsertBus(payload.new as BusPosition);
+          }
         },
       )
       .subscribe();

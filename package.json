@@ -8,7 +8,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "jest --watchAll"
+  },
+  "jest": {
+    "preset": "jest-expo"
   },
   "dependencies": {
     "@expo/metro-config": "~54.0.14",
@@ -19,6 +23,8 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@supabase/supabase-js": "^2.112.3",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "29.5.14",
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.35",
     "expo-constants": "~18.0.13",
@@ -38,6 +44,8 @@
     "expo-system-ui": "~6.0.9",
     "expo-updates": "~29.0.20",
     "expo-web-browser": "~15.0.11",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.18",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

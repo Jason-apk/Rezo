@@ -1,10 +1,11 @@
 // src/hooks/useEtaLogger.ts
+import { ETA_LOGGER_CONFIG } from "@/config/config";
 import { supabase } from "@/lib/supabase";
 import { RankedBus } from "@/utils/busRanking";
 import { getDeviceId } from "@/utils/deviceId";
 import { useEffect, useRef } from "react";
 
-const THROTTLE_MS = 30_000;
+const THROTTLE_MS = ETA_LOGGER_CONFIG.THROTTLE_MS;
 
 export function useEtaLogger(
   topBus: RankedBus | undefined,

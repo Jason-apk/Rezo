@@ -5,6 +5,7 @@ import { usePostTripFeedback } from "@/hooks/usePostTripFeedback";
 import { useRankedBusesForStop } from "@/hooks/useRankedBusesForStop";
 import { colors, fontSize, radius, spacing } from "@/theme/tokens";
 import { AlertConfig } from "@/types";
+import { RankedBus } from "@/utils/busRanking";
 import { getScreenVariant } from "@/utils/etaScreenState";
 import { Ionicons } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
@@ -174,7 +175,13 @@ function AlertZone({ variant }: { variant: string }) {
   return null;
 }
 // --- Zone ETA ---
-function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
+function EtaZone({
+  variant,
+  topBus,
+}: {
+  variant: string;
+  topBus: RankedBus | undefined;
+}) {
   if (variant === "normal" || variant === "embouteillage") {
     if (!topBus) return null;
     const arrivalTime = new Date(Date.now() + topBus.etaMinutes * 60000);
@@ -250,7 +257,7 @@ function EtaZone({ variant, topBus }: { variant: string; topBus: any }) {
   return null;
 }
 
-function RankingList({ rankedBuses }: { rankedBuses: any[] }) {
+function RankingList({ rankedBuses }: { rankedBuses: RankedBus[] }) {
   return (
     <View style={styles.rankingList}>
       {rankedBuses.map((bus, index) => {
@@ -276,7 +283,7 @@ function RankingList({ rankedBuses }: { rankedBuses: any[] }) {
 // Centralise l'affichage (icône + couleur + texte) pour chaque état d'un bus dans la liste.
 // hasPassedStop est vérifié en premier : un bus qui a dépassé l'arrêt n'est pas "en panne",
 // il faut que l'usager comprenne que c'est normal, pas un problème.
-function getStatusDisplay(bus: any): {
+function getStatusDisplay(bus: RankedBus): {
   icon: keyof typeof Ionicons.glyphMap | null;
   iconColor: string;
   label: string;

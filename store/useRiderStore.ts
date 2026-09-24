@@ -29,6 +29,8 @@ type RiderState = {
   toggleFavorite: (stopId: string) => void;
   setFirstLaunchIfNeeded: () => void;
   markSubscribed: () => void;
+  upsertBus: (bus: BusPosition) => void;
+  removeBus: (busId: string) => void;
 };
 
 export const useRiderStore = create<RiderState>()(
@@ -67,6 +69,20 @@ export const useRiderStore = create<RiderState>()(
         if (!get().firstLaunchAt) {
           set({ firstLaunchAt: new Date().toISOString() });
         }
+      },
+      upsertBus: (bus) => {
+        const current = get().buses;
+        const idx = current.findIndex((b) => b.bus_id === bus.bus_id);
+        if (idx === -1) {
+          set({ buses: [...current, bus] });
+        } else {
+          const next = [...current];
+          next[idx] = bus;
+          set({ buses: next });
+        }
+      },
+      removeBus: (busId) => {
+        set({ buses: get().buses.filter((b) => b.bus_id !== busId) });
       },
     }),
     {

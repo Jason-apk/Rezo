@@ -1,10 +1,12 @@
 // hooks/usePostTripFeedback.ts
+import { FEEDBACK_CONFIG } from "@/config/config";
 import { supabase } from "@/lib/supabase";
 import { getDeviceId } from "@/utils/deviceId";
 import { useEffect, useRef, useState } from "react";
 
-const ARRIVED_TO_FEEDBACK_DELAY_MS = __DEV__ ? 3_000 : 5000; //3 secondes au lieu de 5 minutes, pour tester vite
-const FEEDBACK_TIMEOUT_MS = __DEV__ ? 10_000 : 20_000; // 10 secondes au lieu de 20
+const ARRIVED_TO_FEEDBACK_DELAY_MS =
+  FEEDBACK_CONFIG.ARRIVED_TO_FEEDBACK_DELAY_MS; //3 secondes au lieu de 5 minutes, pour tester vite
+const FEEDBACK_TIMEOUT_MS = FEEDBACK_CONFIG.FEEDBACK_TIMEOUT_MS; // 10 secondes au lieu de 20
 
 export function usePostTripFeedback(
   isArrived: boolean,
